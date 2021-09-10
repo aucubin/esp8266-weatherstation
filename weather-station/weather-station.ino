@@ -55,6 +55,21 @@ void notFound(){
   server.send(400, "text/plain", "404: Not found");
 }
 
+void connectToWifi(){
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(ssid, password, 0, bssid);
+
+  while(WiFi.status() != WL_CONNECTED){
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println();
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Starting...");
@@ -73,18 +88,8 @@ void setup() {
 
   sgp.setIAQBaseline(0x8FE3, 0x920C);
 
-  WiFi.begin(ssid, password, 0, bssid);
-
-  while(WiFi.status() != WL_CONNECTED){
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println();
-  Serial.println("WiFi connected");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-
+  connectToWifi();
+  
   server.on("/temp", getTemperature);
   server.on("/humidity", getHumidity);
   server.on("/tvoc", getTVOC);
@@ -96,5 +101,10 @@ void setup() {
 }
 
 void loop() {
-  server.handleClient();
+  if(WiFi.status() != WL_CONNECTED){
+    connectToWifi();
+  }
+  else{
+      server.handleClient();
+  }
 }
