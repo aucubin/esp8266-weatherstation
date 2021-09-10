@@ -9,6 +9,9 @@ Adafruit_SGP30 sgp;
 
 const char* ssid = "ssid";
 const char* password = "password";
+// only connect to specified BSSID to solve problems 
+// where ESP was connected to AP which was farther away
+const uint8_t bssid[] = {0x30, 0x23, 0x03, 0xDD, 0xC5, 0x51};
 
 uint32_t getAbsoluteHumidity(float temperature, float humidity) {
     // approximation formula from Sensirion SGP30 Driver Integration chapter 3.15
@@ -70,7 +73,7 @@ void setup() {
 
   sgp.setIAQBaseline(0x8FE3, 0x920C);
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid, password, 0, bssid);
 
   while(WiFi.status() != WL_CONNECTED){
     delay(500);
