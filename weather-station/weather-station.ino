@@ -33,8 +33,9 @@ uint32_t getAbsoluteHumidity(float temperature, float humidity) {
 
 void publishTemperature(){
   String temperature = String(dht.getTemperature(),3);
-  char* temperatureArray;
-  temperature.toCharArray(temperatureArray,temperature.length());
+  int len = temperature.length()+1;
+  char temperatureArray[len];
+  temperature.toCharArray(temperatureArray,len);
   if(!temp_publish.publish(temperatureArray)){
     Serial.println("failed to publish temperature");
   }
@@ -45,8 +46,9 @@ void publishTemperature(){
 
 void publishHumidity(){
   String humidity = String(dht.getHumidity(),3);
-  char* humidityArray;
-  humidity.toCharArray(humidityArray,humidity.length());
+  int len = humidity.length()+1;
+  char humidityArray[len];
+  humidity.toCharArray(humidityArray,len);
   if(!humidity_publish.publish(humidityArray)){
     Serial.println("failed to publish humidity");
   }
@@ -57,8 +59,9 @@ void publishHumidity(){
 
 void publishTVOC(){
   String tvoc = String(sgp.TVOC);
-  char* tvocArray;
-  tvoc.toCharArray(tvocArray,tvoc.length());
+  int len = tvoc.length()+1;
+  char tvocArray[len];
+  tvoc.toCharArray(tvocArray,len);
   if(!tvoc_publish.publish(tvocArray)){
     Serial.println("failed to publish tvoc"); 
   }
@@ -69,8 +72,9 @@ void publishTVOC(){
 
 void publishECO2(){
   String eco2 = String(sgp.eCO2);
-  char* eco2Array;
-  eco2.toCharArray(eco2Array,eco2.length());
+  int len = eco2.length()+1;
+  char eco2Array[len];
+  eco2.toCharArray(eco2Array,len);
   if(!eco2_publish.publish(eco2Array)){
     Serial.println("failed to publish eco2");
   }
@@ -134,6 +138,7 @@ void loop() {
   }
   sgp.setHumidity(getAbsoluteHumidity(dht.getTemperature(),dht.getHumidity()));
   sgp.IAQmeasure();
+  Serial.println("Start publishing data...");
   publishTemperature();
   publishHumidity();
   publishTVOC();
