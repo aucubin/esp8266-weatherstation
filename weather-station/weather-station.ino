@@ -1,17 +1,28 @@
 #include <DHTesp.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
+#include <Adafruit_MQTT.h>
+#include <Adafruit_MQTT_Client.h>
 #include <Adafruit_SGP30.h>
 
-DHTesp dht;
-ESP8266WebServer server(80);
-Adafruit_SGP30 sgp;
 
 const char* ssid = "ssid";
 const char* password = "password";
 // only connect to specified BSSID to solve problems 
 // where ESP was connected to AP which was farther away
 const uint8_t bssid[] = {0x30, 0x23, 0x03, 0xDD, 0xC5, 0x51};
+const char* mqtt_user = "mqtt_user";
+const char* mqtt_password = "mqtt_password";
+const char* mqtt_broker = "example.com";
+const int mqtt_port = 1883;
+
+DHTesp dht;
+Adafruit_SGP30 sgp;
+WiFiClient client;
+Adafruit_MQTT_Client mqtt(&client, mqtt_broker, mqtt_port, mqtt_user, mqtt_password);
+Adafruit_MQTT_Publish temp_publish(&mqtt, "weather/aucubin/temp");
+Adafruit_MQTT_Publish tvoc_publish(&mqtt, "weather/aucubin/tvoc");
+Adafruit_MQTT_Publish eco2_publish(&mqtt, "weather/aucubin/eco2");
+Adafruit_MQTT_Publish humidity_publish(&mqtt, "weather/aucubin/humidity");
 
 uint32_t getAbsoluteHumidity(float temperature, float humidity) {
     // approximation formula from Sensirion SGP30 Driver Integration chapter 3.15
@@ -20,39 +31,52 @@ uint32_t getAbsoluteHumidity(float temperature, float humidity) {
     return absoluteHumidityScaled;
 }
 
-void getTemperature(){
-  server.send(200, "text/plain", String(dht.getTemperature(),3));
-}
-
-void getHumidity(){
-  server.send(200, "text/plain", String(dht.getHumidity(),3));
-}
-
-void getTVOC(){
-  
-  sgp.setHumidity(getAbsoluteHumidity(dht.getTemperature(),dht.getHumidity()));
-
-  if(!sgp.IAQmeasure()){
-    server.send(500, "text/plain", String("Measure failed"));
+void publishTemperature(){
+  String temperature = String(dht.getTemperature(),3);
+  char* temperatureArray;
+  temperature.toCharArray(temperatureArray,temperature.length());
+  if(!temp_publish.publish(temperatureArray)){
+    Serial.println("failed to publish temperature");
   }
   else{
-    server.send(200, "text/plain", String(sgp.TVOC));
+    Serial.println("published temperature");
   }
 }
 
-void getECO2(){
-  sgp.setHumidity(getAbsoluteHumidity(dht.getTemperature(),dht.getHumidity()));
-
-  if(!sgp.IAQmeasure()){
-    server.send(500, "text/plain", String("Measure failed"));
+void publishHumidity(){
+  String humidity = String(dht.getHumidity(),3);
+  char* humidityArray;
+  humidity.toCharArray(humidityArray,humidity.length());
+  if(!humidity_publish.publish(humidityArray)){
+    Serial.println("failed to publish humidity");
   }
   else{
-    server.send(200, "text/plain", String(sgp.eCO2));
+    Serial.println("published humidity");
   }
 }
 
-void notFound(){
-  server.send(400, "text/plain", "404: Not found");
+void publishTVOC(){
+  String tvoc = String(sgp.TVOC);
+  char* tvocArray;
+  tvoc.toCharArray(tvocArray,tvoc.length());
+  if(!tvoc_publish.publish(tvocArray)){
+    Serial.println("failed to publish tvoc"); 
+  }
+  else{
+    Serial.println("published tvoc");
+  }
+}
+
+void publishECO2(){
+  String eco2 = String(sgp.eCO2);
+  char* eco2Array;
+  eco2.toCharArray(eco2Array,eco2.length());
+  if(!eco2_publish.publish(eco2Array)){
+    Serial.println("failed to publish eco2");
+  }
+  else{
+    Serial.println("published eco2");
+  }
 }
 
 void connectToWifi(){
@@ -60,7 +84,7 @@ void connectToWifi(){
   WiFi.begin(ssid, password, 0, bssid);
 
   while(WiFi.status() != WL_CONNECTED){
-    delay(500);
+    delay(1000);
     Serial.print(".");
   }
 
@@ -68,6 +92,16 @@ void connectToWifi(){
   Serial.println("WiFi connected");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+}
+
+void connectToMQTT(){
+  Serial.println("Connecting to MQTT...");
+  while(mqtt.connect() != 0){
+    delay(1000);
+    Serial.print(".");
+    mqtt.disconnect();
+  }
+  Serial.println("MQTT connected");
 }
 
 void setup() {
@@ -88,23 +122,21 @@ void setup() {
 
   sgp.setIAQBaseline(0x8FE3, 0x920C);
 
-  connectToWifi();
-  
-  server.on("/temp", getTemperature);
-  server.on("/humidity", getHumidity);
-  server.on("/tvoc", getTVOC);
-  server.on("/eco2", getECO2);
-  server.onNotFound(notFound);
-
-  server.begin();
-  Serial.println("HTTP server started");
+  connectToWifi();  
 }
 
 void loop() {
   if(WiFi.status() != WL_CONNECTED){
     connectToWifi();
   }
-  else{
-      server.handleClient();
+  else if(!mqtt.connected()){
+    connectToMQTT();
   }
+  sgp.setHumidity(getAbsoluteHumidity(dht.getTemperature(),dht.getHumidity()));
+  sgp.IAQmeasure();
+  publishTemperature();
+  publishHumidity();
+  publishTVOC();
+  publishECO2();
+  delay(10000);
 }
