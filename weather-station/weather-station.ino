@@ -124,7 +124,7 @@ void setup() {
   Serial.print(sgp.serialnumber[1], HEX);
   Serial.println(sgp.serialnumber[2], HEX);
 
-  sgp.setIAQBaseline(0x8FE3, 0x920C);
+  sgp.setIAQBaseline(0x9A1D, 0x9BE5);
 
   connectToWifi();  
 }
