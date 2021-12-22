@@ -12,7 +12,7 @@ const char* password = "password";
 const uint8_t bssid[] = {0x30, 0x23, 0x03, 0xDD, 0xC5, 0x51};
 const char* mqtt_user = "mqtt_user";
 const char* mqtt_password = "mqtt_password";
-const char* mqtt_broker = "example.com";
+const char* mqtt_broker = "examplecom";
 const int mqtt_port = 1883;
 
 DHTesp dht;
