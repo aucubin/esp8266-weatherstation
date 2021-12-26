@@ -5,12 +5,13 @@
 #include <Adafruit_MQTT_Client.h>
 #include <Adafruit_SGP30.h>
 #include <PolledTimeout.h>
+#include "creds.h"
 
-const char *ssid = "ssid";
-const char *password = "password";
-const char *mqtt_user = "mqtt_user";
-const char *mqtt_password = "mqtt_password";
-const char *mqtt_broker = "example.com";
+const char *ssid = SSID;
+const char *password = WIFI_PASSWORD;
+const char *mqtt_user = MQTT_USER;
+const char *mqtt_password = MQTT_PASSWORD;
+const char *mqtt_broker = MQTT_BROKER;
 const int mqtt_port = 1883;
 
 DHTesp dht;
